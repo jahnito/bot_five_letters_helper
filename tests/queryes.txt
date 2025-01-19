@@ -1,0 +1,8 @@
+Выборка слов по размеру
+
+SELECT * FROM dictionary WHERE length(word) = 5
+
+Выборка слов с исключением и точным вхождением
+
+SELECT * FROM dictionary WHERE length(word) = 5 AND word NOT REGEXP '[абвАБВ]' AND word REGEXP '.р...'
+
