@@ -6,3 +6,12 @@ SELECT * FROM dictionary WHERE length(word) = 5
 
 SELECT * FROM dictionary WHERE length(word) = 5 AND word NOT REGEXP '[абвАБВ]' AND word REGEXP '.р...'
 
+
+
+
+
+
+
+INSERT INTO attempts (session_id, attempt_number) VALUES 
+((SELECT id FROM sessions WHERE tg_id=133073976 AND active=1), 
+(SELECT count() FROM attempts WHERE session_id=(SELECT id FROM sessions WHERE tg_id=133073976 AND active=1)))
