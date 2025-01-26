@@ -23,6 +23,7 @@ CREATE TABLE "sessions" (
 	"started"	TEXT,
 	"ended"	TEXT,
 	"active"	INTEGER,
+	"word_len"	INTEGER,
 	"result"	TEXT,
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
