@@ -3,10 +3,29 @@ from aiogram import F
 from aiogram.types import CallbackQuery
 
 
-__all__ = ['IsRemoveLetter']
+__all__ = ['IsRemButton', 'IsCncRemButton', 'IsRstRemButton', 'IsAgrRemButton',
+           'IsAddButton', 'IsCncAddButton', 'IsRstAddButton', 'IsAgrAddButton',
+           'IsNonposLetterButton', 'IsNonposNumberButton', 'IsGetLengthWord'
+           ]
 
 
-class IsRemoveLetter(BaseFilter):
+class IsGetLengthWord(BaseFilter):
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, num = callback.data.split('_')
+            if suf == 'length' and num.isdigit():
+                return {'length': int(num)}
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsRemButton(BaseFilter):
     def __init__(self):
         pass
 
@@ -19,3 +38,165 @@ class IsRemoveLetter(BaseFilter):
                 return False
         except (ValueError, IndexError) as e:
             return False 
+
+
+class IsCncRemButton(BaseFilter):
+    '''
+    Фильтр отлова колбэка по нажатию кнопки Отмена
+    '''
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, cmd = callback.data.split('_')
+            if suf == 'rem' and cmd == 'cnc':
+                return True
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsRstRemButton(BaseFilter):
+    '''
+    Фильтр отлова колбэка по нажатию кнопки Отмена
+    '''
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, cmd = callback.data.split('_')
+            if suf == 'rem' and cmd == 'rst':
+                return True
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsAgrRemButton(BaseFilter):
+    '''
+    Фильтр отлова колбэка по нажатию Принять
+    '''
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, cmd = callback.data.split('_')
+            if suf == 'rem' and cmd == 'agr':
+                return True
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsAddButton(BaseFilter):
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, let = callback.data.split('_')
+            if suf == 'add' and len(let) == 1:
+                return {'let': let}
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsCncAddButton(BaseFilter):
+    '''
+    Фильтр отлова колбэка по нажатию кнопки Отмена
+    '''
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, cmd = callback.data.split('_')
+            if suf == 'add' and cmd == 'cnc':
+                return True
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsRstAddButton(BaseFilter):
+    '''
+    Фильтр отлова колбэка по нажатию кнопки Отмена
+    '''
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, cmd = callback.data.split('_')
+            if suf == 'add' and cmd == 'rst':
+                return True
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsAgrAddButton(BaseFilter):
+    '''
+    Фильтр отлова колбэка по нажатию Принять
+    '''
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, cmd = callback.data.split('_')
+            if suf == 'add' and cmd == 'agr':
+                return True
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsNonposLetterButton(BaseFilter):
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, let = callback.data.split('_')
+            if suf == 'np' and let.isalpha() and len(let) == 1:
+                return {'let': let}
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsNonposNumberButton(BaseFilter):
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, num = callback.data.split('_')
+            if suf == 'np' and num.isdigit() and len(num) == 1:
+                return {'num': num}
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
