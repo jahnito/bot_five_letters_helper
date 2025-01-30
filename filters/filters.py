@@ -5,7 +5,9 @@ from aiogram.types import CallbackQuery
 
 __all__ = ['IsRemButton', 'IsCncRemButton', 'IsRstRemButton', 'IsAgrRemButton',
            'IsAddButton', 'IsCncAddButton', 'IsRstAddButton', 'IsAgrAddButton',
-           'IsNonposLetterButton', 'IsNonposNumberButton', 'IsGetLengthWord'
+           'IsNonposLetterButton', 'IsNonposNumberButton', 'IsGetLengthWord',
+           'IsRstNposButton', 'IsAgrNposButton', 'IsPosLetterButton',
+           'IsPosNumberButton',
            ]
 
 
@@ -192,9 +194,79 @@ class IsNonposNumberButton(BaseFilter):
 
     async def __call__(self, callback: CallbackQuery):
         try:
-            suf, num = callback.data.split('_')
-            if suf == 'np' and num.isdigit() and len(num) == 1:
-                return {'num': num}
+            suf, numlet = callback.data.split('_')
+            if suf == 'np' and numlet[0].isdigit() and numlet[1].isalpha() and len(numlet) == 2:
+                return True
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsRstNposButton(BaseFilter):
+    '''
+    Фильтр отлова колбэка по нажатию кнопки сброс
+    '''
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, cmd = callback.data.split('_')
+            if suf == 'np' and cmd == 'rst':
+                return True
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsAgrNposButton(BaseFilter):
+    '''
+    Фильтр отлова колбэка по нажатию кнопки Принять
+    '''
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, cmd = callback.data.split('_')
+            if suf == 'np' and cmd == 'agr':
+                return True
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsPosLetterButton(BaseFilter):
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, let = callback.data.split('_')
+            if suf == 'ip' and let.isalpha() and len(let) == 1:
+                return {'let': let}
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsPosNumberButton(BaseFilter):
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, numlet = callback.data.split('_')
+            if suf == 'ip' and numlet[0].isdigit() and numlet[1].isalpha() and len(numlet) == 2:
+                return True
             else:
                 return False
         except (ValueError, IndexError) as e:

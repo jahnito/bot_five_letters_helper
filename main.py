@@ -6,6 +6,7 @@ from pprint import pprint
 from config import Config
 from db import *
 from filters import *
+from functions import show_pos_letters
 from lexicon import RU
 
 
@@ -33,10 +34,9 @@ async def process_start_command(message: Message):
 async def process_run_guess(message: Message):
     if await check_active_session(_db, message):
         await message.answer(text='Сессия бодбора слов запущена')
-        print('Сессия запущена')
     else:
         await message.answer(
-            text='Выбери длину слова.',
+            text=RU['kb_choice_length'],
             reply_markup=gen_kb_set_lenght()
             )
 
@@ -49,7 +49,7 @@ async def process_help_command(callback: CallbackQuery):
         await create_session(_db, callback) # создаем сессию
         await create_attempt(_db, callback) # создаем первую попытку
         await callback.message.edit_text(
-            text='⛔️ Сессия подбора слова запущена, выбери буквы которых нет в слове',
+            text=RU['kb_exc_0'],
             reply_markup=gen_kb_letters('rem')
             )
 
@@ -66,8 +66,9 @@ async def get_excluded_letter(callback: CallbackQuery, let):
             await callback.answer(f'Буква *{let}* уже была исключена')
             letters = chars_excluded
             await callback.message.edit_text(
-                f'⛔️ Буквы отсутствующие в слове: {", ".join(letters)} \n'
-                'для продолжения нажмите Принять',
+                RU['kb_exc_head'] +
+                f'{", ".join(letters)}' +
+                RU['kb_exc_footer'],
                 reply_markup=callback.message.reply_markup)
         # Первичный выбор буквы
         else:
@@ -77,36 +78,10 @@ async def get_excluded_letter(callback: CallbackQuery, let):
         letters = let
     await insert_chars_to_attempt(_db, callback, letters)
     await callback.message.edit_text(
-        f'⛔️ Буквы отсутствующие в слове: {", ".join(sorted(letters))}\n'
-        'для продолжения нажмите Принять',
+        RU['kb_exc_head'] +
+        f'{", ".join(letters)}' +
+        RU['kb_exc_footer'],
         reply_markup=callback.message.reply_markup)
-
-
-@dp.callback_query(IsAddButton())
-async def get_included_letter(callback: CallbackQuery, let):
-    chars_included = await get_letters(_db, callback)
-    chars_excluded = await get_letters_excluded(_db, callback)
-    if let in chars_excluded:
-        # Проверка вхождения буквы в исключенных
-        await callback.answer(f'Буква *{let}* в исключениях')
-    else:
-        if chars_included:
-            if let in chars_included:
-                await callback.answer(f'Буква *{let}* уже добавлена')
-                letters = chars_included
-            else:
-                letters = chars_included + let
-                await callback.answer(f'Добавлена буква *{let}*')
-        else:
-            letters = let
-        await insert_chars_to_attempt(_db, callback, letters)
-        await callback.message.edit_text(
-            f'✳️ Буквы присутствующие в слове: {", ".join(sorted(letters))}\n'
-            'для продолжения нажмите Принять',
-            reply_markup=callback.message.reply_markup)
-
-    # print(chars_included)
-    # print(callback.data )
 
 
 @dp.callback_query(IsCncRemButton())
@@ -119,25 +94,9 @@ async def cancel_last_rem_letter(callback: CallbackQuery):
         await callback.answer(f'Возвращена буква *{chars_excluded[-1]}*')
         await insert_chars_to_attempt(_db, callback, chars_excluded[:-1])
         await callback.message.edit_text(
-            f'⛔️ Буквы отсутствующие в слове: {", ".join(sorted(chars_excluded[:-1]))}\n'
-            'для продолжения нажмите Принять',
-            reply_markup=callback.message.reply_markup)
-    else:
-        await callback.answer(f'Список букв пуст')
-
-
-@dp.callback_query(IsCncAddButton())
-async def cancel_last_add_letter(callback: CallbackQuery):
-    '''
-    Удаляем последнюю добавленную букву
-    '''
-    chars_included = await get_letters(_db, callback)
-    if chars_included:
-        await callback.answer(f'Возвращена буква *{chars_included[-1]}*')
-        await insert_chars_to_attempt(_db, callback, chars_included[:-1])
-        await callback.message.edit_text(
-            f'✳️ Буквы присутствующие в слове: {", ".join(sorted(chars_included[:-1]))}\n'
-            'для продолжения нажмите Принять',
+            RU['kb_exc_head'] +
+            f'{", ".join(chars_excluded[:-1])}' +
+            RU['kb_exc_footer'],
             reply_markup=callback.message.reply_markup)
     else:
         await callback.answer(f'Список букв пуст')
@@ -153,8 +112,67 @@ async def reset_last_rem_letter(callback: CallbackQuery):
         await callback.answer(f'Список букв очищен!')
         await insert_chars_to_attempt(_db, callback, '')
         await callback.message.edit_text(
-            '⛔️ Буквы отсутствующие в слове: \n'
-            'для продолжения нажмите Принять',
+            RU['kb_exc_head'] +
+            RU['kb_exc_footer'],
+            reply_markup=callback.message.reply_markup)
+    else:
+        await callback.answer(f'Список букв пуст')
+
+
+@dp.callback_query(IsAgrRemButton())
+async def agree_excluded_letters(callback: CallbackQuery):
+    await callback.message.edit_text(
+        text=f'✳️ Выберите буквы которые есть в слове'
+              '\n\nвыбери буквы которые есть в слове и нажми Принять',
+        reply_markup=gen_kb_letters('add')
+        )
+
+
+
+
+
+
+@dp.callback_query(IsAddButton())
+async def get_included_letter(callback: CallbackQuery, let):
+    chars_included = await get_letters(_db, callback)
+    chars_excluded = await get_letters_excluded(_db, callback)
+    length = await get_length_word(_db, callback)
+
+
+    if let in chars_excluded:
+        # Проверка вхождения буквы в исключенных
+        await callback.answer(f'Буква *{let}* в исключениях')
+    elif chars_included and length == len(chars_included):
+        await callback.answer('Количество букв превышает количество букв в слове')
+    else:
+        if chars_included:
+            if let in chars_included:
+                await callback.answer(f'Буква *{let}* уже добавлена')
+                letters = chars_included
+            else:
+                letters = chars_included + let
+                await callback.answer(f'Добавлена буква *{let}*')
+        else:
+            letters = let
+        await insert_chars_to_attempt(_db, callback, letters)
+        await callback.message.edit_text(
+            f'✳️ Буквы присутствующие в слове: {", ".join(sorted(letters))}'
+            '\n\nдля продолжения нажмите Принять',
+            reply_markup=callback.message.reply_markup)
+
+
+@dp.callback_query(IsCncAddButton())
+async def cancel_last_add_letter(callback: CallbackQuery):
+    '''
+    Удаляем последнюю добавленную букву
+    '''
+    chars_included = await get_letters(_db, callback)
+    if chars_included:
+        await callback.answer(f'Возвращена буква *{chars_included[-1]}*')
+        await insert_chars_to_attempt(_db, callback, chars_included[:-1])
+        await callback.message.edit_text(
+            f'✳️ Буквы присутствующие в слове: {", ".join(sorted(chars_included[:-1]))}'
+            '\n\nдля продолжения нажмите Принять',
             reply_markup=callback.message.reply_markup)
     else:
         await callback.answer(f'Список букв пуст')
@@ -170,20 +188,11 @@ async def reset_last_add_letter(callback: CallbackQuery):
         await callback.answer(f'Список букв очищен!')
         await insert_chars_to_attempt(_db, callback, '')
         await callback.message.edit_text(
-            '✳️ Буквы присутствующие в слове: \n'
-            'для продолжения нажмите Принять',
+            '✳️ Буквы присутствующие в слове: '
+            '\n\nдля продолжения нажмите Принять',
             reply_markup=callback.message.reply_markup)
     else:
         await callback.answer(f'Список букв пуст')
-
-
-@dp.callback_query(IsAgrRemButton())
-async def agree_excluded_letters(callback: CallbackQuery):
-    # chars_included = await get_letters(_db, callback)
-    await callback.message.edit_text(
-        text=f'✳️ Выберите буквы которые есть в слове',
-        reply_markup=gen_kb_letters('add')
-        )
 
 
 @dp.callback_query(IsAgrAddButton())
@@ -191,19 +200,112 @@ async def agree_excluded_letters(callback: CallbackQuery):
     chars_included = await get_letters(_db, callback)
     await callback.message.edit_text(
         text='✳️ Выберите букву, для которой известна позиция в которой этой '
-             'буквы точно нет\nдля продолжения нажмите Принять',
+             'буквы точно нет\n\nдля продолжения нажмите Принять',
         # np = non-position
         reply_markup=gen_kb_letters_in(chars_included, 'np')
         )
+
+
+
+
+
 
 
 @dp.callback_query(IsNonposLetterButton())
 async def press_nonpos_button(callback: CallbackQuery, let):
     length = await get_length_word(_db, callback)
     await callback.message.edit_text(
-        text=f'Выбери позицию где нет буквы {let}',
+        text=f'📌 Выбери позицию где нет буквы {let}',
         reply_markup=gen_kb_line(length, 'np', let)
     )
+
+
+@dp.callback_query(IsNonposNumberButton())
+async def press_nonpos_num_button(callback: CallbackQuery):
+    chars_included = await get_letters(_db, callback)
+    letters = await get_pos_letters(_db, callback)
+    pos_letters = show_pos_letters(letters)
+    if letters and callback.data.split('_')[-1] in letters.split(':'):
+        await callback.answer(text='Эта буква уже добавлена в этой позиции')
+        await callback.message.edit_text(
+            text='📌 Буквы не на своих местах\n'
+                f'{pos_letters}',
+            reply_markup=gen_kb_letters_in(chars_included, 'np')
+        )
+    else:
+        await insert_positions_to_attempt(_db, callback)    
+        letters = await get_pos_letters(_db, callback)
+        pos_letters = show_pos_letters(letters)
+        await callback.message.edit_text(
+            text='📌 Буквы не на своих местах\n'
+                f'{pos_letters}',
+            reply_markup=gen_kb_letters_in(chars_included, 'np')
+        )
+
+
+@dp.callback_query(IsRstNposButton())
+async def press_nonpos_rst_button(callback: CallbackQuery):
+    await reset_positions_to_attempt(_db, callback)
+    chars_included = await get_letters(_db, callback)
+    await callback.message.edit_text(
+        text='📌 Буквы не на своих местах\n\n',
+        # np = non-position
+        reply_markup=gen_kb_letters_in(chars_included, 'np')
+        )
+
+
+@dp.callback_query(IsAgrNposButton())
+async def agree_nonpos_letters(callback: CallbackQuery):
+    chars_included = await get_letters(_db, callback)
+    await callback.message.edit_text(
+        text='📌 Выбираем букву, для которой известна позиция\n',
+        # ip = in-position
+        reply_markup=gen_kb_letters_in(chars_included, 'ip')
+    )
+
+
+@dp.callback_query(IsPosLetterButton())
+async def press_pos_button(callback: CallbackQuery, let):
+    length = await get_length_word(_db, callback)
+    await callback.message.edit_text(
+        text=f'📌 Выбери позицию буквы {let}',
+        reply_markup=gen_kb_line(length, 'ip', let)
+    )
+
+
+@dp.callback_query(IsPosNumberButton())
+async def press_pos_num_button(callback: CallbackQuery):
+    chars_included = await get_letters(_db, callback)
+    letters = await get_pos_letters(_db, callback)
+    pos_letters = show_pos_letters(letters)
+    non_letters = await get_pos_letters(_db, callback, with_callback=False, suf='np')
+    if letters and callback.data.split('_')[-1] in letters.split(':'):
+        await callback.answer(text='Эта буква уже добавлена в этой позиции')
+        await callback.message.edit_text(
+            text='📌 Выбираем букву, для которой известна позиция\n'
+                f'{pos_letters}',
+            reply_markup=gen_kb_letters_in(chars_included, 'ip')
+        )
+    elif callback.data.split('_')[-1] in non_letters:
+        await callback.answer(text='Эта буква уже не в соответсвующей позиции')
+        await callback.message.edit_text(
+            text='📌 Выбираем букву, для которой известна позиция\n'
+                f'{pos_letters}',
+            reply_markup=gen_kb_letters_in(chars_included, 'ip')
+        )
+    else:
+        await insert_positions_to_attempt(_db, callback)    
+        letters = await get_pos_letters(_db, callback)
+        pos_letters = show_pos_letters(letters)
+        await callback.message.edit_text(
+            text='📌 Выбираем букву, для которой известна позиция\n'
+                f'{pos_letters}',
+            reply_markup=gen_kb_letters_in(chars_included, 'ip')
+        )
+
+
+
+
 
 
 @dp.callback_query()

@@ -8,7 +8,8 @@ __all__ = [
     'check_exist_user', 'update_activity_user', 'insert_new_user',
     'update_status_user', 'create_session', 'check_active_session',
     'create_attempt', 'get_active_session', 'get_letters',
-    'get_letters_excluded', 'insert_chars_to_attempt', 'get_length_word'
+    'get_letters_excluded', 'insert_chars_to_attempt', 'get_length_word',
+    'get_pos_letters', 'insert_positions_to_attempt', 'reset_positions_to_attempt'
     ]
 
 async def check_exist_user(database: str, id: int) -> bool:
@@ -100,12 +101,9 @@ async def check_active_session(database: str, message: Message) -> bool:
         async with aiosqlite.connect(database) as conn:
             cursor = await conn.execute(f'SELECT active FROM sessions WHERE tg_id={message.from_user.id}')
             res = await cursor.fetchone()
-            print(res)
             if res and res[0] == 1:
-                print('True')
                 return True
             else:
-                print('False')
                 return False
     except aiosqlite.Error as e:
         print(e)
@@ -180,10 +178,74 @@ async def insert_chars_to_attempt(database: str, callback: CallbackQuery, letter
             field = 'included'
         session_id = await get_active_session(database, callback)
         async with aiosqlite.connect(database) as conn:
-            await conn.execute(f'UPDATE attempts SET chars_{field}="{letters}" WHERE session_id={session_id}')
+            # тут ошибка, отбор + max attempt_number
+            await conn.execute(f'UPDATE attempts SET chars_{field}="{letters}" WHERE session_id={session_id} AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id={session_id})')
             await conn.commit()
     except aiosqlite.Error as e:
         print(e)
+
+
+async def get_pos_letters(database, callback: CallbackQuery, with_callback=True, suf=None) -> str:
+    try:
+        if with_callback:
+            suf, numlet = callback.data.split('_')
+        if 'np' == suf:
+            field = 'non_in_pos'
+        else:
+            field = 'in_pos'
+        session_id = await get_active_session(database, callback)
+        async with aiosqlite.connect(database) as conn:
+            cursor = await conn.execute(f'SELECT chars_{field} FROM attempts WHERE session_id={session_id} AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id={session_id})')
+            res = await cursor.fetchone()
+            return res[0]
+    except aiosqlite.Error as e:
+        print(e)
+
+
+async def insert_positions_to_attempt(database: str, callback: CallbackQuery):
+    try:
+        suf, pl  = callback.data.split('_')
+        if 'np' == suf:
+            field = 'non_in_pos'
+        else:
+            field = 'in_pos'
+        pos_letters = await get_pos_letters(database, callback)
+        if pos_letters:
+            pos_letters = pos_letters.split()
+        else:
+            pos_letters = []
+        pos_letters.append(pl)
+        # print(suf, pl, *pos_letters)
+        session_id = await get_active_session(database, callback)
+        # print(f'UPDATE attempts SET chars_{field}="{":".join(pos_letters)}" WHERE session_id={session_id} AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id={session_id})')
+        async with aiosqlite.connect(database) as conn:
+            await conn.execute(f'UPDATE attempts SET chars_{field}="{":".join(pos_letters)}" WHERE session_id={session_id} AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id={session_id})')
+            await conn.commit()
+    except aiosqlite.Error as e:
+        print(e)
+
+
+async def reset_positions_to_attempt(database: str, callback: CallbackQuery):
+    try:
+        suf, pl  = callback.data.split('_')
+        if 'np' in callback.data:
+            field = 'non_in_pos'
+        else:
+            field = 'in_pos'
+        pos_letters = await get_pos_letters(database, callback)
+        if pos_letters:
+            pos_letters = pos_letters.split()
+        else:
+            pos_letters = []
+        pos_letters.append(pl)
+        session_id = await get_active_session(database, callback)
+        # print(f'UPDATE attempts SET chars_{field}="{":".join(pos_letters)}" WHERE session_id={session_id} AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id={session_id})')
+        async with aiosqlite.connect(database) as conn:
+            await conn.execute(f'UPDATE attempts SET chars_{field}="" WHERE session_id={session_id} AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id={session_id})')
+            await conn.commit()
+    except aiosqlite.Error as e:
+        print(e)
+
 
 '''
 INSERT INTO users (tg_id, status, registered, activity) VALUES (173718058, 1, datetime('now'), datetime('now'))
@@ -201,8 +263,7 @@ INSERT INTO attempts (session_id, attempt_number) VALUES
 
 
 SELECT chars_excluded FROM attempts WHERE session_id=4 AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id=4)
+
+
+UPDATE attempts SET chars_non_in_pos='5е' WHERE session_id=33 AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id=33)
 '''
-
-
-# if __name__ == '__main__':
-#     asyncio.run(check_status_user('database.db', 133073976))
