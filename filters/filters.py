@@ -7,7 +7,7 @@ __all__ = ['IsRemButton', 'IsCncRemButton', 'IsRstRemButton', 'IsAgrRemButton',
            'IsAddButton', 'IsCncAddButton', 'IsRstAddButton', 'IsAgrAddButton',
            'IsNonposLetterButton', 'IsNonposNumberButton', 'IsGetLengthWord',
            'IsRstNposButton', 'IsAgrNposButton', 'IsPosLetterButton',
-           'IsPosNumberButton',
+           'IsPosNumberButton', 'IsAgrPosButton'
            ]
 
 
@@ -266,6 +266,25 @@ class IsPosNumberButton(BaseFilter):
         try:
             suf, numlet = callback.data.split('_')
             if suf == 'ip' and numlet[0].isdigit() and numlet[1].isalpha() and len(numlet) == 2:
+                return True
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsAgrPosButton(BaseFilter):
+    '''
+    Фильтр отлова колбэка по нажатию кнопки Принять
+    '''
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, cmd = callback.data.split('_')
+            if suf == 'ip' and cmd == 'agr':
                 return True
             else:
                 return False

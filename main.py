@@ -139,7 +139,7 @@ async def get_included_letter(callback: CallbackQuery, let):
     length = await get_length_word(_db, callback)
 
 
-    if let in chars_excluded:
+    if chars_excluded and let in chars_excluded:
         # Проверка вхождения буквы в исключенных
         await callback.answer(f'Буква *{let}* в исключениях')
     elif chars_included and length == len(chars_included):
@@ -304,6 +304,24 @@ async def press_pos_num_button(callback: CallbackQuery):
         )
 
 
+@dp.callback_query(IsAgrPosButton())
+async def agree_pos_letters(callback: CallbackQuery):
+    length = await get_length_word(_db, callback)
+    data = await get_all_data_attempt(_db, callback)
+    abc = await get_words_from_dict(_db, length)
+    # res = {}
+    # if data.get('ex'):
+    #     res['ex'] = f'[^{data["ex"] + data["ex"].upper()}]' * length
+    # if data.get('in'):
+    #     res['in'] = f'[{data["in"] + data["in"].upper()}]' * length
+    # if data.get('np'):
+    #     res['np'] = set_non_pos_string(data['np'], length)
+    # if data.get('ip'):
+    #     res['ip'] = set_pos_string(data['ip'], length)
+    # pprint(res)
+    print(len(abc))
+    print(*abc[:50], sep='\n')
+    # pprint(abc)
 
 
 

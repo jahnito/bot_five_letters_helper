@@ -7,7 +7,10 @@ SELECT * FROM dictionary WHERE length(word) = 5
 SELECT * FROM dictionary WHERE length(word) = 5 AND word NOT REGEXP '[абвАБВ]' AND word REGEXP '.р...'
 
 
-
+SELECT * FROM dictionary WHERE length(word) = 5
+	AND word REGEXP '[^автАВТ][^автАВТ][^автАВТ][^автАВТ][^автАВТ]'
+	AND word REGEXP '...[^д][^е]'
+	AND word REGEXP '..[д].[д]'
 
 
 

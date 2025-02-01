@@ -9,7 +9,8 @@ __all__ = [
     'update_status_user', 'create_session', 'check_active_session',
     'create_attempt', 'get_active_session', 'get_letters',
     'get_letters_excluded', 'insert_chars_to_attempt', 'get_length_word',
-    'get_pos_letters', 'insert_positions_to_attempt', 'reset_positions_to_attempt'
+    'get_pos_letters', 'insert_positions_to_attempt',
+    'reset_positions_to_attempt', 'get_all_data_attempt', 'get_words_from_dict'
     ]
 
 async def check_exist_user(database: str, id: int) -> bool:
@@ -245,6 +246,46 @@ async def reset_positions_to_attempt(database: str, callback: CallbackQuery):
             await conn.commit()
     except aiosqlite.Error as e:
         print(e)
+
+
+async def get_all_data_attempt(database: str, callback: CallbackQuery):
+    try:
+        res = {}
+        suf, cmd = callback.data.split('_')
+        session_id = await get_active_session(database, callback)
+        if suf == 'ip' and cmd == 'agr':
+            async with aiosqlite.connect(database) as conn:
+                cursor = await conn.execute(f'SELECT chars_excluded, chars_included, chars_non_in_pos, chars_in_pos FROM attempts WHERE session_id={session_id} AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id={session_id})')
+                data = await cursor.fetchone()
+                res['ex'] = data[0]
+                res['in'] = data[1]
+                res['np'] = data[2]
+                res['ip'] = data[3]
+        return res
+    except aiosqlite.Error as e:
+        print(e)
+        return False
+
+
+async def get_words_from_dict(database: str, length: int):
+    try:
+        res_list = []
+        query = f'SELECT word FROM dictionary WHERE length(word) = {length}'
+        # for k,v in filter_data.items():
+        #     query += f'AND word REGEXP "{v}" '
+
+        # print(query)
+        # return query
+        async with aiosqlite.connect(database) as conn:
+            cursor = await conn.execute(query)
+            result = await cursor.fetchall()
+        for i in result:
+            res_list.append(i[0])
+        res_list.sort()
+        return res_list
+    except aiosqlite.Error as e:
+        print(e)
+        return False
 
 
 '''
