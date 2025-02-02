@@ -26,6 +26,7 @@ async def check_exist_user(database: str, id: int) -> bool:
                 return False
     except Error:
         print(Error)
+        return False
 
 
 async def check_status_user(database: str, id: int) -> bool:
@@ -42,6 +43,7 @@ async def check_status_user(database: str, id: int) -> bool:
                 return False
     except Error:
         print(Error)
+        return False
 
 
 async def insert_new_user(database: str, message: Message):
@@ -108,6 +110,7 @@ async def check_active_session(database: str, message: Message) -> bool:
                 return False
     except aiosqlite.Error as e:
         print(e)
+        return False
 
 
 async def create_attempt(database: str, callback: CallbackQuery):
@@ -131,6 +134,7 @@ async def get_active_session(database: str, callback: CallbackQuery) -> int:
             return res[0]
     except aiosqlite.Error as e:
         print(e)
+        return None
 
 
 async def get_letters(database: str, callback: CallbackQuery):
@@ -201,6 +205,7 @@ async def get_pos_letters(database, callback: CallbackQuery, with_callback=True,
             return res[0]
     except aiosqlite.Error as e:
         print(e)
+        return None
 
 
 async def insert_positions_to_attempt(database: str, callback: CallbackQuery):
@@ -271,11 +276,6 @@ async def get_words_from_dict(database: str, length: int):
     try:
         res_list = []
         query = f'SELECT word FROM dictionary WHERE length(word) = {length}'
-        # for k,v in filter_data.items():
-        #     query += f'AND word REGEXP "{v}" '
-
-        # print(query)
-        # return query
         async with aiosqlite.connect(database) as conn:
             cursor = await conn.execute(query)
             result = await cursor.fetchall()

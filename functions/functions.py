@@ -17,7 +17,7 @@ def show_pos_letters(line: str) -> str:
     return out_line
 
 
-def filter_regex(line, regex):
+def filter_regex(line, regex) -> bool:
     if re.match(regex, line):
         return True
     else:
@@ -25,10 +25,27 @@ def filter_regex(line, regex):
 
 
 def words_filter(dictionary: list, params: dict) -> list:
-    dictionary = filter(filter_regex)
+    for i in params:
+        dictionary = list(filter(lambda x: filter_regex(x, params[i]), dictionary))
+        # dictionary = list(filter(filter_regex, zip(dictionary, repeat(params[i]))))
+        # print(params[i])
+    # print(dictionary)
+    dictionary.sort()
+    return dictionary
+
+
+    # dictionary = filter(filter_regex, zip(dictionary, repeat()))
 
 
 if __name__ == '__main__':
+    params = {
+              'ex': '^[^ёЁ]+$',
+            #   'in': '[а]+',
+            #   'np': '',
+            #   'ip': ''
+              }
+
+
     words = ['ясное',
  'ясной',
  'ясном',
@@ -140,6 +157,15 @@ if __name__ == '__main__':
  'ёрзаю',
  'ёрзая',
  'ёрник',]
-    for i in words:
-        # print(i)
-        filter_regex(i, r'^[^ёЁ]+$')
+
+    words.sort()
+
+
+    # print(*words, sep='\n')
+
+    print(*words)
+
+
+    print('\n\n')
+
+    print(*words_filter(words, params))
