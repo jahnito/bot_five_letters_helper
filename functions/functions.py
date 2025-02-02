@@ -39,14 +39,18 @@ def words_filter(dictionary: list, params: dict) -> list:
 
 if __name__ == '__main__':
     params = {
-              'ex': '^[^ёЁ]+$',
-            #   'in': '[а]+',
-            #   'np': '',
-            #   'ip': ''
+              'ex': r'^((?![а])\w)*$',
+              'in': r'^\w*[ё]{1}\w*$',
+              'np': r'\w\w\w[^лт]\w',
+              'ip': r'\w\w\w[уо]\w'
               }
 
 
-    words = ['ясное',
+    words = [
+        'ррарр',
+        'рррра',
+        'арррр',
+        'ясное',
  'ясной',
  'ясном',
  'ясною',
