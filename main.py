@@ -6,7 +6,7 @@ from pprint import pprint
 from config import Config
 from db import *
 from filters import *
-from functions import show_pos_letters, gen_params, words_filter
+from functions import show_pos_letters, gen_params, words_filter, show_words
 from lexicon import RU
 
 
@@ -37,7 +37,8 @@ async def process_run_guess(message: Message):
     else:
         await message.answer(
             text=RU['kb_choice_length'],
-            reply_markup=gen_kb_set_lenght()
+            reply_markup=gen_kb_set_lenght(),
+            parse_mode='MarkdownV2'
             )
 
 
@@ -79,7 +80,7 @@ async def get_excluded_letter(callback: CallbackQuery, let):
     await insert_chars_to_attempt(_db, callback, letters)
     await callback.message.edit_text(
         RU['kb_exc_head'] +
-        f'{", ".join(letters)}' +
+        f'{", ".join(sorted(letters))}' +
         RU['kb_exc_footer'],
         reply_markup=callback.message.reply_markup)
 
@@ -95,7 +96,7 @@ async def cancel_last_rem_letter(callback: CallbackQuery):
         await insert_chars_to_attempt(_db, callback, chars_excluded[:-1])
         await callback.message.edit_text(
             RU['kb_exc_head'] +
-            f'{", ".join(chars_excluded[:-1])}' +
+            f'{", ".join(sorted(chars_excluded[:-1]))}' +
             RU['kb_exc_footer'],
             reply_markup=callback.message.reply_markup)
     else:
@@ -286,7 +287,7 @@ async def press_pos_num_button(callback: CallbackQuery):
                 f'{pos_letters}',
             reply_markup=gen_kb_letters_in(chars_included, 'ip')
         )
-    elif callback.data.split('_')[-1] in non_letters:
+    elif non_letters and callback.data.split('_')[-1] in non_letters:
         await callback.answer(text='Эта буква уже не в соответсвующей позиции')
         await callback.message.edit_text(
             text='📌 Выбираем букву, для которой известна позиция\n'
@@ -304,6 +305,17 @@ async def press_pos_num_button(callback: CallbackQuery):
         )
 
 
+@dp.callback_query(IsRstPosButton())
+async def press_pos_rst_button(callback: CallbackQuery):
+    await reset_positions_to_attempt(_db, callback)
+    chars_included = await get_letters(_db, callback)
+    await callback.message.edit_text(
+        text='📌 Выбираем букву, для которой известна позиция\n\n',
+        # ip = in-position
+        reply_markup=gen_kb_letters_in(chars_included, 'ip')
+        )
+
+
 @dp.callback_query(IsAgrPosButton())
 async def agree_pos_letters(callback: CallbackQuery):
     # Длина слова
@@ -316,9 +328,51 @@ async def agree_pos_letters(callback: CallbackQuery):
     params = gen_params(data.get('ex', ''), data.get('in', ''), data.get('np', ''), data.get('ip', ''), length)
     # Фильтруем словарь, только подходящие слова
     dictionary = words_filter(dictionary, params)
-
+    # В БД заносим отфильтрованный список слов
+    await insert_filtered_dict(_db, dictionary, callback)
+    length_filtered = len(dictionary)
+    pages = length_filtered // 40
+    words = await get_words_from_filtered_dict(_db, 0, 40, callback)
+    text = show_words(words, 3)
+    await callback.message.edit_text(
+        text=text,
+        reply_markup=gen_kb_words(3, 'words', 2, f'{1}/{pages + 1}({len(dictionary)})',)
+    )
+    print(1)
     print(len(dictionary))
-    print(params)
+    print(text)
+
+
+
+
+@dp.callback_query(IsNextButton())
+async def press_next_button(callback: CallbackQuery, nxt: int):
+    num_words = await count_filtered_words(_db, callback)
+    words = await get_words_from_filtered_dict(_db, (nxt - 1) * 40, 40, callback)
+    pages = num_words // 40 + 1
+    if pages == nxt:
+        next_page = nxt
+    else:
+        next_page = nxt + 1
+    text = show_words(words, 3)
+    await callback.message.edit_text(
+        text=text,
+        reply_markup=gen_kb_words(3, 'words', next_page, f'{nxt}/{pages}({num_words})',)
+    )
+    print(text)
+    print(num_words)
+    print(nxt)
+
+
+@dp.callback_query(IsPrevButton())
+async def press_next_button(callback: CallbackQuery, prv: int):
+    num_words = await count_filtered_words(_db, callback)
+    if prv > 0:
+        prev_page = prv - 1
+    else:
+        prev_page = prv
+    # print(num_words)
+    # print(prev_page)
 
 
 

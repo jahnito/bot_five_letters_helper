@@ -1,10 +1,14 @@
 CREATE TABLE "dictionary" (
 	"id"	INTEGER,
 	"word"	TEXT,
-	"part_of_speech"	INTEGER,
+	"code"	INTEGER,
+	"code_parent"	INTEGER,
+	"gender"	TEXT,
+	"wcase"	INTEGER,
+	"soul"	INTEGER,
 	"description"	TEXT,
-	"added"	DATETIME,
-	"changed"	DATETIME,
+	"added"	TEXT,
+	"changed"	TEXT,
 	PRIMARY KEY("id")
 );
 
@@ -37,5 +41,14 @@ CREATE TABLE "attempts" (
 	"chars_non_in_pos"	TEXT,
 	"chars_in_pos"	TEXT,
 	"attempt_number"	INTEGER,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
+
+
+CREATE TABLE "filtered_dicts" (
+	"id"	INTEGER,
+	"tg_id"	INTEGER,
+	"word"	TEXT,
+	"session_id"	INTEGER,
 	PRIMARY KEY("id" AUTOINCREMENT)
 );

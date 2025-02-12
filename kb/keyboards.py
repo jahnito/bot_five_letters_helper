@@ -47,3 +47,17 @@ def gen_kb_line(lenght: int, suffix: str, let: str) -> InlineKeyboardMarkup:
     builder.add(cnc_btn)
     builder.adjust(lenght)
     return builder.as_markup()
+
+
+def gen_kb_words(lenght: int, suffix: str, page: int, info: str) -> InlineKeyboardMarkup:
+    '''
+    Клавиатура для пролистывания страниц слов (пагинация)
+    '''
+    builder = InlineKeyboardBuilder()
+    prev_button = InlineKeyboardButton(text='<<<', callback_data=f'prevW_{page}')
+    pages_button = InlineKeyboardButton(text=f'{info}', callback_data=f'infoW_{page}')
+    next_button = InlineKeyboardButton(text='>>>', callback_data=f'nextW_{page}')
+    agree_button = InlineKeyboardButton(text='✅ Принять', callback_data=f'{suffix}_{page}')
+    builder.add(*[prev_button, pages_button, next_button, agree_button])
+    builder.adjust(lenght)
+    return builder.as_markup()

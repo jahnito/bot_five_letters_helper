@@ -10,7 +10,8 @@ __all__ = [
     'create_attempt', 'get_active_session', 'get_letters',
     'get_letters_excluded', 'insert_chars_to_attempt', 'get_length_word',
     'get_pos_letters', 'insert_positions_to_attempt',
-    'reset_positions_to_attempt', 'get_all_data_attempt', 'get_words_from_dict'
+    'reset_positions_to_attempt', 'get_all_data_attempt', 'get_words_from_dict',
+    'insert_filtered_dict', 'get_words_from_filtered_dict', 'count_filtered_words'
     ]
 
 async def check_exist_user(database: str, id: int) -> bool:
@@ -129,7 +130,7 @@ async def create_attempt(database: str, callback: CallbackQuery):
 async def get_active_session(database: str, callback: CallbackQuery) -> int:
     try:
         async with aiosqlite.connect(database) as conn:
-            cursor = await conn.execute(f'SELECT id FROM sessions WHERE tg_id={callback.from_user.id}')
+            cursor = await conn.execute(f'SELECT id FROM sessions WHERE tg_id={callback.from_user.id} AND active=1')
             res = await cursor.fetchone()
             return res[0]
     except aiosqlite.Error as e:
@@ -288,6 +289,50 @@ async def get_words_from_dict(database: str, length: int):
         return False
 
 
+async def get_words_from_filtered_dict(database: str, start: int, end: int, callback: CallbackQuery):
+    try:
+        session_id = await get_active_session(database, callback)
+        res_list = []
+        query = f'SELECT word FROM filtered_dicts WHERE session_id={session_id} limit {start},{end}'
+        async with aiosqlite.connect(database) as conn:
+            cursor = await conn.execute(query)
+            result = await cursor.fetchall()
+        for i in result:
+            res_list.append(i[0])
+        # res_list.sort()
+        return res_list
+    except aiosqlite.Error as e:
+        print(e)
+        return False
+
+
+async def insert_filtered_dict(database: str, words: list, callback: CallbackQuery):
+    try:
+        session_id = await get_active_session(database, callback)
+        async with aiosqlite.connect(database) as conn:
+            for w in words:
+                query = f'INSERT INTO filtered_dicts ("tg_id", "word", "session_id") VALUES ({callback.from_user.id}, "{w}", {session_id})'
+                await conn.execute(query)
+            await conn.commit()
+    except aiosqlite.Error as e:
+        print(e)
+        return False
+
+
+async def count_filtered_words(database: str, callback: CallbackQuery):
+    try:
+        session_id = await get_active_session(database, callback)
+        query = f'SELECT count() FROM filtered_dicts WHERE tg_id={callback.from_user.id} AND session_id={session_id}'
+        async with aiosqlite.connect(database) as conn:
+            cursor = await conn.execute(query)
+            result = await cursor.fetchone()
+        return result[0]
+    except aiosqlite.Error as e:
+        print(e)
+        return False
+
+
+
 '''
 INSERT INTO users (tg_id, status, registered, activity) VALUES (173718058, 1, datetime('now'), datetime('now'))
 
@@ -307,4 +352,6 @@ SELECT chars_excluded FROM attempts WHERE session_id=4 AND attempt_number=(SELEC
 
 
 UPDATE attempts SET chars_non_in_pos='5е' WHERE session_id=33 AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id=33)
+
+SELECT count() FROM filtered_dicts WHERE tg_id=133073976 AND session_id=89
 '''

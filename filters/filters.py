@@ -7,7 +7,8 @@ __all__ = ['IsRemButton', 'IsCncRemButton', 'IsRstRemButton', 'IsAgrRemButton',
            'IsAddButton', 'IsCncAddButton', 'IsRstAddButton', 'IsAgrAddButton',
            'IsNonposLetterButton', 'IsNonposNumberButton', 'IsGetLengthWord',
            'IsRstNposButton', 'IsAgrNposButton', 'IsPosLetterButton',
-           'IsPosNumberButton', 'IsAgrPosButton'
+           'IsPosNumberButton', 'IsAgrPosButton', 'IsRstPosButton',
+           'IsPrevButton', 'IsNextButton'
            ]
 
 
@@ -286,6 +287,63 @@ class IsAgrPosButton(BaseFilter):
             suf, cmd = callback.data.split('_')
             if suf == 'ip' and cmd == 'agr':
                 return True
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsRstPosButton(BaseFilter):
+    '''
+    Фильтр отлова колбэка по нажатию кнопки сброс
+    '''
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, cmd = callback.data.split('_')
+            if suf == 'ip' and cmd == 'rst':
+                return True
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsNextButton(BaseFilter):
+    '''
+    Фильтр отлова колбэка по нажатию кнопки следующй страницы
+    '''
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, page = callback.data.split('_')
+            if suf == 'nextW' and page.isdigit():
+                return {'nxt': int(page)}
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsPrevButton(BaseFilter):
+    '''
+    Фильтр отлова колбэка по нажатию кнопки предыдущей страницы
+    '''
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, page = callback.data.split('_')
+            if suf == 'prevW' and page.isdigit():
+                return {'prv': int(page)}
             else:
                 return False
         except (ValueError, IndexError) as e:
