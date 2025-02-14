@@ -44,7 +44,7 @@ def gen_kb_line(lenght: int, suffix: str, let: str) -> InlineKeyboardMarkup:
     builder.add(*[InlineKeyboardButton(text=str(i), callback_data=f'{suffix}_{str(i)+let}') for i in range(1, lenght + 1)])
     cnc_btn = InlineKeyboardButton(text='⭕️ Отмена', callback_data=f'{suffix}_cnc')
     # builder.adjust(8)
-    builder.add(cnc_btn)
+    # builder.add(cnc_btn)
     builder.adjust(lenght)
     return builder.as_markup()
 
@@ -60,4 +60,12 @@ def gen_kb_words(lenght: int, suffix: str, page: int, info: str) -> InlineKeyboa
     agree_button = InlineKeyboardButton(text='✅ Принять', callback_data=f'{suffix}_{page}')
     builder.add(*[prev_button, pages_button, next_button, agree_button])
     builder.adjust(lenght)
+    return builder.as_markup()
+
+
+def gen_kb_end_attempt(page):
+    builder = InlineKeyboardBuilder()
+    word_found = InlineKeyboardButton(text='🔍 Слово найдено', callback_data='word_find')
+    next_attempt = InlineKeyboardButton(text='🗃 Начать новый поиск подходящих слов', callback_data='next_attempt')
+    builder.add(*[word_found, next_attempt])
     return builder.as_markup()

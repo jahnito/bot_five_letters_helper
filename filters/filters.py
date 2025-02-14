@@ -8,7 +8,7 @@ __all__ = ['IsRemButton', 'IsCncRemButton', 'IsRstRemButton', 'IsAgrRemButton',
            'IsNonposLetterButton', 'IsNonposNumberButton', 'IsGetLengthWord',
            'IsRstNposButton', 'IsAgrNposButton', 'IsPosLetterButton',
            'IsPosNumberButton', 'IsAgrPosButton', 'IsRstPosButton',
-           'IsPrevButton', 'IsNextButton'
+           'IsPrevButton', 'IsNextButton', 'IsAttemptEnd', 'IsFindedWord'
            ]
 
 
@@ -344,6 +344,41 @@ class IsPrevButton(BaseFilter):
             suf, page = callback.data.split('_')
             if suf == 'prevW' and page.isdigit():
                 return {'prv': int(page)}
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsAttemptEnd(BaseFilter):
+    '''
+    Отлов нажатия кнопки принять после пролистывания перечня слов
+    '''
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, num = callback.data.split('_')
+            if suf == 'words' and num.isdigit():
+                return {'page': num}
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsFindedWord(BaseFilter):
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, glag = callback.data.split('_')
+            if suf == 'word' and glag == 'find':
+                return True
             else:
                 return False
         except (ValueError, IndexError) as e:

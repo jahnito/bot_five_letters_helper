@@ -200,8 +200,8 @@ async def reset_last_add_letter(callback: CallbackQuery):
 async def agree_excluded_letters(callback: CallbackQuery):
     chars_included = await get_letters(_db, callback)
     await callback.message.edit_text(
-        text='✳️ Выберите букву, для которой известна позиция в которой этой '
-             'буквы точно нет\n\nдля продолжения нажмите Принять',
+        text='🚫 Выберите букву, для которой известно место где этой'
+             'буквы нет\n\nдля продолжения нажмите Принять',
         # np = non-position
         reply_markup=gen_kb_letters_in(chars_included, 'np')
         )
@@ -338,9 +338,9 @@ async def agree_pos_letters(callback: CallbackQuery):
         text=text,
         reply_markup=gen_kb_words(3, 'words', 2, f'{1}/{pages + 1}({len(dictionary)})',)
     )
-    print(1)
-    print(len(dictionary))
-    print(text)
+    # print(1)
+    # print(len(dictionary))
+    # print(text)
 
 
 
@@ -359,21 +359,39 @@ async def press_next_button(callback: CallbackQuery, nxt: int):
         text=text,
         reply_markup=gen_kb_words(3, 'words', next_page, f'{nxt}/{pages}({num_words})',)
     )
-    print(text)
-    print(num_words)
-    print(nxt)
 
 
 @dp.callback_query(IsPrevButton())
-async def press_next_button(callback: CallbackQuery, prv: int):
+async def press_prev_button(callback: CallbackQuery, prv: int):
     num_words = await count_filtered_words(_db, callback)
-    if prv > 0:
+    words = await get_words_from_filtered_dict(_db, (prv - 1) * 40, 40, callback)
+    pages = num_words // 40 + 1
+    if prv > 1:
         prev_page = prv - 1
     else:
         prev_page = prv
-    # print(num_words)
-    # print(prev_page)
+    text = show_words(words, 3)
+    await callback.message.edit_text(
+        text=text,
+        reply_markup=gen_kb_words(3, 'words', prev_page, f'{prv}/{pages}({num_words})',)
+    )
 
+
+@dp.callback_query(IsAttemptEnd())
+async def press_agr_attempt(callback: CallbackQuery, page):
+    await callback.message.edit_text(
+        text='Подбор слов завершен',
+        reply_markup=gen_kb_end_attempt(page)
+    )
+    # print(page)
+
+
+@dp.callback_query(IsFindedWord())
+async def press_word_find(callback: CallbackQuery):
+    await end_session(_db, callback)
+    await callback.message.edit_text(
+        text='Если я вам помог, то напишите какое слово подошло.'
+    )
 
 
 

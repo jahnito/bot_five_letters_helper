@@ -11,7 +11,8 @@ __all__ = [
     'get_letters_excluded', 'insert_chars_to_attempt', 'get_length_word',
     'get_pos_letters', 'insert_positions_to_attempt',
     'reset_positions_to_attempt', 'get_all_data_attempt', 'get_words_from_dict',
-    'insert_filtered_dict', 'get_words_from_filtered_dict', 'count_filtered_words'
+    'insert_filtered_dict', 'get_words_from_filtered_dict',
+    'count_filtered_words', 'end_session'
     ]
 
 async def check_exist_user(database: str, id: int) -> bool:
@@ -332,6 +333,18 @@ async def count_filtered_words(database: str, callback: CallbackQuery):
         return False
 
 
+async def end_session(database: str, callback: CallbackQuery):
+    try:
+        session_id = await get_active_session(database, callback)
+        query = f'UPDATE sessions SET ended=datetime("now"), active=0 WHERE id={session_id} AND tg_id={callback.from_user.id}'
+        async with aiosqlite.connect(database) as conn:
+            await conn.execute(query)
+            await conn.commit()
+        return True
+    except aiosqlite.Error as e:
+        print(e)
+        return False
+
 
 '''
 INSERT INTO users (tg_id, status, registered, activity) VALUES (173718058, 1, datetime('now'), datetime('now'))
@@ -354,4 +367,6 @@ SELECT chars_excluded FROM attempts WHERE session_id=4 AND attempt_number=(SELEC
 UPDATE attempts SET chars_non_in_pos='5е' WHERE session_id=33 AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id=33)
 
 SELECT count() FROM filtered_dicts WHERE tg_id=133073976 AND session_id=89
+
+UPDATE `sessions` SET ended=datetime('now'), active=0 WHERE id=106 AND tg_id=133073976
 '''
