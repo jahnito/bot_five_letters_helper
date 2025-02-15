@@ -8,12 +8,15 @@ __all__ = [
     'check_exist_user', 'update_activity_user', 'insert_new_user',
     'update_status_user', 'create_session', 'check_active_session',
     'create_attempt', 'get_active_session', 'get_letters',
-    'get_letters_excluded', 'insert_chars_to_attempt', 'get_length_word',
+    'get_letters_excluded', 'get_letters_included',
+    'insert_chars_to_attempt', 'get_length_word',
     'get_pos_letters', 'insert_positions_to_attempt',
     'reset_positions_to_attempt', 'get_all_data_attempt', 'get_words_from_dict',
     'insert_filtered_dict', 'get_words_from_filtered_dict',
-    'count_filtered_words', 'end_session'
+    'count_filtered_words', 'end_session', 'create_attempt_next',
+    'delete_filtered_dict', 'get_current_attempt'
     ]
+
 
 async def check_exist_user(database: str, id: int) -> bool:
     '''
@@ -128,6 +131,61 @@ async def create_attempt(database: str, callback: CallbackQuery):
         print(e)
 
 
+async def create_attempt_next(database: str, callback: CallbackQuery, data: dict):
+    '''
+    Функция переносит данный из предыдущей попытки и создает новую, для улучшенной фильтрации слов
+    '''
+    if data.get('ex'):
+        excluded = data['ex']
+    else:
+        excluded = ''
+
+    if data.get('in'):
+        included = data['in']
+    else:
+        included = ''
+
+    if data.get('ip'):
+        in_pos = data['ip']
+    else:
+        in_pos = ''
+
+    if data.get('np'):
+        non_pos = data['np']
+    else:
+        non_pos = ''
+
+    query = f'INSERT INTO attempts \
+                (session_id, message_id, chars_excluded, chars_included, chars_non_in_pos, chars_in_pos, attempt_number) \
+            VALUES ( \
+                (SELECT id FROM sessions WHERE tg_id={callback.from_user.id} AND active=1), \
+            {callback.message.message_id}, \
+            "{excluded}", \
+            "{included}", \
+            "{non_pos}", \
+            "{in_pos}", \
+            (SELECT count() FROM attempts WHERE session_id=(SELECT id FROM sessions WHERE tg_id={callback.from_user.id} AND active=1)))'
+    try:
+        async with aiosqlite.connect(database) as conn:
+            await conn.execute(query)
+            await conn.commit()
+    except aiosqlite.Error as e:
+        print(e)
+
+
+async def delete_filtered_dict(database: str, callback: CallbackQuery):
+    '''
+    Функция удаления отфильтрованных словарей, удаляет все записи по tg_id
+    '''
+    query = f'DELETE FROM filtered_dicts WHERE tg_id={callback.from_user.id}'
+    try:
+        async with aiosqlite.connect(database) as conn:
+            await conn.execute(query)
+            await conn.commit()
+    except aiosqlite.Error as e:
+        print(e)
+
+
 async def get_active_session(database: str, callback: CallbackQuery) -> int:
     try:
         async with aiosqlite.connect(database) as conn:
@@ -139,10 +197,21 @@ async def get_active_session(database: str, callback: CallbackQuery) -> int:
         return None
 
 
+async def get_current_attempt(database: str, callback: CallbackQuery):
+    query = f'SELECT max(attempt_number) FROM attempts WHERE session_id=(SELECT id FROM sessions WHERE tg_id={callback.from_user.id} AND active=1) '
+    try:
+        async with aiosqlite.connect(database) as conn:
+            cursor = await conn.execute(query)
+            res = await cursor.fetchone()
+            return res[0]
+    except aiosqlite.Error as e:
+        print(e)
+
+
 async def get_letters(database: str, callback: CallbackQuery):
     try:
         suf, let = callback.data.split('_')
-        if suf == 'rem':
+        if (suf == 'rem' and len(let) == 1) or suf == 'next':
             table = 'excluded'
         else:
             table = 'included'
@@ -161,6 +230,18 @@ async def get_letters_excluded(database: str, callback: CallbackQuery):
         session_id = await get_active_session(database, callback)
         async with aiosqlite.connect(database) as conn:
             cursor = await conn.execute(f'SELECT chars_excluded FROM attempts WHERE session_id={session_id} AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id={session_id})')
+            result = await cursor.fetchone()
+        return result[0]
+    except aiosqlite.Error as e:
+        print(e)
+
+
+async def get_letters_included(database: str, callback: CallbackQuery):
+    try:
+        suf, let = callback.data.split('_')
+        session_id = await get_active_session(database, callback)
+        async with aiosqlite.connect(database) as conn:
+            cursor = await conn.execute(f'SELECT chars_included FROM attempts WHERE session_id={session_id} AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id={session_id})')
             result = await cursor.fetchone()
         return result[0]
     except aiosqlite.Error as e:
@@ -196,7 +277,7 @@ async def get_pos_letters(database, callback: CallbackQuery, with_callback=True,
     try:
         if with_callback:
             suf, numlet = callback.data.split('_')
-        if 'np' == suf:
+        if (suf == 'np' and numlet != 'agr') or (suf == 'add' and numlet == 'agr'):
             field = 'non_in_pos'
         else:
             field = 'in_pos'
@@ -260,9 +341,10 @@ async def get_all_data_attempt(database: str, callback: CallbackQuery):
         res = {}
         suf, cmd = callback.data.split('_')
         session_id = await get_active_session(database, callback)
-        if suf == 'ip' and cmd == 'agr':
+        if (suf == 'ip' and cmd == 'agr') or (suf == 'next' and cmd == 'attempt'):
             async with aiosqlite.connect(database) as conn:
-                cursor = await conn.execute(f'SELECT chars_excluded, chars_included, chars_non_in_pos, chars_in_pos FROM attempts WHERE session_id={session_id} AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id={session_id})')
+                query = f'SELECT chars_excluded, chars_included, chars_non_in_pos, chars_in_pos FROM attempts WHERE session_id={session_id} AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id={session_id})'
+                cursor = await conn.execute(query)
                 data = await cursor.fetchone()
                 res['ex'] = data[0]
                 res['in'] = data[1]
@@ -369,4 +451,18 @@ UPDATE attempts SET chars_non_in_pos='5е' WHERE session_id=33 AND attempt_numbe
 SELECT count() FROM filtered_dicts WHERE tg_id=133073976 AND session_id=89
 
 UPDATE `sessions` SET ended=datetime('now'), active=0 WHERE id=106 AND tg_id=133073976
+
+
+
+
+
+INSERT INTO attempts (session_id, message_id, chars_excluded, chars_included, chars_non_in_pos, chars_in_pos, attempt_number)
+VALUES (
+    (SELECT id FROM sessions WHERE tg_id=133073976 AND active=1),
+	1055,
+	"нигабе",
+	"лск",
+	"2л:4с:5к:1к",
+	"",
+	(SELECT count() FROM attempts WHERE session_id=(SELECT id FROM sessions WHERE tg_id=133073976 AND active=1)))
 '''

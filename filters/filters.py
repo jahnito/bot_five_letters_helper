@@ -8,7 +8,8 @@ __all__ = ['IsRemButton', 'IsCncRemButton', 'IsRstRemButton', 'IsAgrRemButton',
            'IsNonposLetterButton', 'IsNonposNumberButton', 'IsGetLengthWord',
            'IsRstNposButton', 'IsAgrNposButton', 'IsPosLetterButton',
            'IsPosNumberButton', 'IsAgrPosButton', 'IsRstPosButton',
-           'IsPrevButton', 'IsNextButton', 'IsAttemptEnd', 'IsFindedWord'
+           'IsPrevButton', 'IsNextButton', 'IsAttemptEnd', 'IsFindedWord',
+           'IsNextAttempt',
            ]
 
 
@@ -378,6 +379,22 @@ class IsFindedWord(BaseFilter):
         try:
             suf, glag = callback.data.split('_')
             if suf == 'word' and glag == 'find':
+                return True
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsNextAttempt(BaseFilter):
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, glag = callback.data.split('_')
+            if suf == 'next' and glag == 'attempt':
                 return True
             else:
                 return False

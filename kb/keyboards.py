@@ -66,6 +66,6 @@ def gen_kb_words(lenght: int, suffix: str, page: int, info: str) -> InlineKeyboa
 def gen_kb_end_attempt(page):
     builder = InlineKeyboardBuilder()
     word_found = InlineKeyboardButton(text='🔍 Слово найдено', callback_data='word_find')
-    next_attempt = InlineKeyboardButton(text='🗃 Начать новый поиск подходящих слов', callback_data='next_attempt')
+    next_attempt = InlineKeyboardButton(text='🗃 Начать новый поиск', callback_data='next_attempt')
     builder.add(*[word_found, next_attempt])
     return builder.as_markup()
