@@ -5,9 +5,9 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 ABC = [chr(i) for i in range(1072, 1104)] # + [chr(1105)]
 
 
-def gen_kb_set_lenght():
+def gen_kb_set_lenght(suf=''):
     builder = InlineKeyboardBuilder()
-    builder.add(*[InlineKeyboardButton(text=str(i), callback_data=f'length_{str(i)}') for i in range(4, 9)])
+    builder.add(*[InlineKeyboardButton(text=str(i), callback_data=f'length{suf}_{str(i)}') for i in range(4, 9)])
     return builder.as_markup()
 
 

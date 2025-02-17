@@ -9,9 +9,11 @@ __all__ = ['IsRemButton', 'IsCncRemButton', 'IsRstRemButton', 'IsAgrRemButton',
            'IsRstNposButton', 'IsAgrNposButton', 'IsPosLetterButton',
            'IsPosNumberButton', 'IsAgrPosButton', 'IsRstPosButton',
            'IsPrevButton', 'IsNextButton', 'IsAttemptEnd', 'IsFindedWord',
-           'IsNextAttempt',
+           'IsNextAttempt', 'IsGetLengthRandomWord'
            ]
 
+
+# start find word
 
 class IsGetLengthWord(BaseFilter):
     def __init__(self):
@@ -396,6 +398,24 @@ class IsNextAttempt(BaseFilter):
             suf, glag = callback.data.split('_')
             if suf == 'next' and glag == 'attempt':
                 return True
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+# start random word #
+
+class IsGetLengthRandomWord(BaseFilter):
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, num = callback.data.split('_')
+            if suf == 'lengthR' and num.isdigit():
+                return {'length': int(num)}
             else:
                 return False
         except (ValueError, IndexError) as e:

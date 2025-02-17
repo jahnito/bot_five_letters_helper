@@ -14,7 +14,7 @@ __all__ = [
     'reset_positions_to_attempt', 'get_all_data_attempt', 'get_words_from_dict',
     'insert_filtered_dict', 'get_words_from_filtered_dict',
     'count_filtered_words', 'end_session', 'create_attempt_next',
-    'delete_filtered_dict', 'get_current_attempt'
+    'delete_filtered_dict', 'get_current_attempt', 'get_random_word'
     ]
 
 
@@ -428,6 +428,18 @@ async def end_session(database: str, callback: CallbackQuery):
         return False
 
 
+async def get_random_word(database: str, callback: CallbackQuery, lenght):
+    try:
+        query = f'SELECT word FROM dictionary WHERE length(word)={lenght} ORDER BY random() LIMIT 1;'
+        async with aiosqlite.connect(database) as conn:
+            cursor = await conn.execute(query)
+            res = await cursor.fetchone()
+        return res[0]
+    except aiosqlite.Error as e:
+        print(e)
+        return False
+
+
 '''
 INSERT INTO users (tg_id, status, registered, activity) VALUES (173718058, 1, datetime('now'), datetime('now'))
 
@@ -465,4 +477,7 @@ VALUES (
 	"2л:4с:5к:1к",
 	"",
 	(SELECT count() FROM attempts WHERE session_id=(SELECT id FROM sessions WHERE tg_id=133073976 AND active=1)))
+
+
+SELECT word FROM dictionary WHERE length(word)=5 ORDER BY random() LIMIT 1;
 '''

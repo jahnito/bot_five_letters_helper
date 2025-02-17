@@ -1,8 +1,5 @@
 import re
-from itertools import repeat
 
-
-from pprint import pprint
 
 def show_pos_letters(line: str) -> str:
     '''
