@@ -232,23 +232,46 @@ async def reset_last_add_letter(callback: CallbackQuery):
 async def agree_included_letters(callback: CallbackQuery):
     await update_activity_user(_db, callback.message)
     chars_included = await get_letters(_db, callback)
-    cur_attempt = await get_current_attempt(_db, callback)
-    # Если это не первая попытка, выводим клаву с уже существующими буквами
-    if cur_attempt > 0:
-        letters = await get_pos_letters(_db, callback)
-        pos_letters = show_pos_letters(letters)
-        await callback.message.edit_text(
-            text='📌 Буквы не на своих местах\n'
-                f'{pos_letters}',
-            reply_markup=gen_kb_letters_in(chars_included, 'np')
-        )
-    else:
-        await callback.message.edit_text(
-            text='🚫 Выберите букву, для которой известно место где этой'
-                'буквы нет\n\nчтобы продолжить/пропустить: нажмите Принять',
-            # np = non-position
-            reply_markup=gen_kb_letters_in(chars_included, 'np')
+    if chars_included:
+        cur_attempt = await get_current_attempt(_db, callback)
+        # Если это не первая попытка, выводим клаву с уже существующими буквами
+        if cur_attempt > 0:
+            letters = await get_pos_letters(_db, callback)
+            pos_letters = show_pos_letters(letters)
+            await callback.message.edit_text(
+                text='📌 Буквы не на своих местах\n'
+                    f'{pos_letters}',
+                reply_markup=gen_kb_letters_in(chars_included, 'np')
             )
+        else:
+            await callback.message.edit_text(
+                text='🚫 Выберите букву, для которой известно место где этой '
+                    'буквы нет\n\nчтобы продолжить/пропустить: нажмите Принять',
+                # np = non-position
+                reply_markup=gen_kb_letters_in(chars_included, 'np')
+                )
+    else:
+        await update_activity_user(_db, callback.message)
+        # Длина слова
+        length = await get_length_word(_db, callback)
+        # Берем все строки из попытки
+        data = await get_all_data_attempt(_db, callback)
+        # Выбираем все слова из словаря определенной длины
+        dictionary = await get_words_from_dict(_db, length)
+        # Формируем словарь параметров с регулярками
+        params = gen_params(data.get('ex', ''), data.get('in', ''), data.get('np', ''), data.get('ip', ''), length)
+        # Фильтруем словарь, только подходящие слова
+        dictionary = words_filter(dictionary, params)
+        # В БД заносим отфильтрованный список слов
+        await insert_filtered_dict(_db, dictionary, callback)
+        length_filtered = len(dictionary)
+        pages = length_filtered // 40
+        words = await get_words_from_filtered_dict(_db, 0, 40, callback)
+        text = show_words(words, 3)
+        await callback.message.edit_text(
+            text=text,
+            reply_markup=gen_kb_words(3, 'words', 2, f'{1}/{pages + 1}({len(dictionary)})',)
+        )
 
 
 @dp.callback_query(IsNonposLetterButton())
