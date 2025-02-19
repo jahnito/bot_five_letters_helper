@@ -1,4 +1,4 @@
-FROM python:3.12.9-alpine3.21
+FROM python:3.11.11-slim-bookworm
 
 COPY requirements.txt ./
 
@@ -17,5 +17,7 @@ COPY filters /app/filters
 COPY functions /app/functions
 COPY kb /app/kb
 COPY lexicon /app/lexicon
+
+VOLUME [ "/app/database.db" ]
 
 ENTRYPOINT ["/usr/local/bin/python3", "main.py"]
