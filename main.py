@@ -17,6 +17,11 @@ bot = Bot(token=CONF.token)
 dp = Dispatcher()
 
 
+@dp.message(IsNotPrivateChat())
+async def got_text_message(message: Message):
+    await message.answer(text='🗝 Прошу прощения, я работаю только в приватном чате')
+
+
 @dp.message(Command(commands=['start']))
 async def process_start_command(message: Message):
     # pprint(message.model_dump_json(indent=4, exclude_none=True))
@@ -482,18 +487,23 @@ async def press_word_find(callback: CallbackQuery):
 
 @dp.message(Command(commands=['random']))
 async def process_run_random_word(message: Message):
-    await update_activity_user(_db, message)
-    await message.answer(
-        text=RU['kb_choice_length'],
-        reply_markup=gen_kb_set_lenght(suf='R'),
-        )
+    timedelta = await get_time_from_last(_db, message)
+    max_limit = 15
+    if timedelta < max_limit:
+        await message.answer(text=f'Нельзя чаще чем раз в {max_limit} секунд, до следующей попытки осталось {max_limit - int(timedelta)} секунд')
+    else:
+        await message.answer(
+            text=RU['kb_choice_length'],
+            reply_markup=gen_kb_set_lenght(suf='R'),
+            )
 
 
 @dp.callback_query(IsGetLengthRandomWord())
 async def press_word_find(callback: CallbackQuery, length: int):
-    await update_activity_user(_db, callback.message)
+    await update_activity_user(_db, callback)
     word = await get_random_word(_db, callback, length)
     await callback.message.edit_text(text=word)
+
 
 
 

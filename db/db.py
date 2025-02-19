@@ -14,7 +14,8 @@ __all__ = [
     'reset_positions_to_attempt', 'get_all_data_attempt', 'get_words_from_dict',
     'insert_filtered_dict', 'get_words_from_filtered_dict',
     'count_filtered_words', 'end_session', 'create_attempt_next',
-    'delete_filtered_dict', 'get_current_attempt', 'get_random_word'
+    'delete_filtered_dict', 'get_current_attempt', 'get_random_word',
+    'get_time_from_last'
     ]
 
 
@@ -439,3 +440,14 @@ async def get_random_word(database: str, callback: CallbackQuery, lenght):
         print(e)
         return False
 
+
+async def get_time_from_last(database: str, callback: CallbackQuery|Message):
+    try:
+        query = f'SELECT (julianday("now") - julianday(activity)) * 86400 FROM users WHERE tg_id={callback.from_user.id}'
+        async with aiosqlite.connect(database) as conn:
+            cursor = await conn.execute(query)
+            res = await cursor.fetchone()
+        return res[0]
+    except aiosqlite.Error as e:
+        print(e)
+        return False       

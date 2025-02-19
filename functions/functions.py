@@ -147,3 +147,4 @@ def show_words(words: dict[str], cols: int) -> str:
     if mid_res:
         res.append(' '.join(mid_res))
     return '\n'.join(res)
+

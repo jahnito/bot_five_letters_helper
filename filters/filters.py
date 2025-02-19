@@ -1,6 +1,6 @@
 from aiogram.filters import BaseFilter
 from aiogram import F
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, Message
 
 
 __all__ = ['IsRemButton', 'IsCncRemButton', 'IsRstRemButton', 'IsAgrRemButton',
@@ -9,7 +9,7 @@ __all__ = ['IsRemButton', 'IsCncRemButton', 'IsRstRemButton', 'IsAgrRemButton',
            'IsRstNposButton', 'IsAgrNposButton', 'IsPosLetterButton',
            'IsPosNumberButton', 'IsAgrPosButton', 'IsRstPosButton',
            'IsPrevButton', 'IsNextButton', 'IsAttemptEnd', 'IsFindedWord',
-           'IsNextAttempt', 'IsGetLengthRandomWord'
+           'IsNextAttempt', 'IsGetLengthRandomWord', 'IsNotPrivateChat'
            ]
 
 
@@ -420,4 +420,15 @@ class IsGetLengthRandomWord(BaseFilter):
                 return False
         except (ValueError, IndexError) as e:
             print(e)
+            return False
+
+
+class IsNotPrivateChat(BaseFilter):
+    def __init__(self):
+        pass
+
+    async def __call__(self, message: Message):
+        if message.chat.type != 'private':
+            return True
+        else:
             return False
