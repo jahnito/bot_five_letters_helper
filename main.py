@@ -154,7 +154,7 @@ async def agree_excluded_letters(callback: CallbackQuery):
     cur_attempt = await get_current_attempt(_db, callback)
     await update_activity_user(_db, callback.message)
     # Если это не первая попытка, выводим клаву с уже существующими буквами
-    if cur_attempt > 1:
+    if cur_attempt > 0:
         chars_included = await get_letters(_db, callback)
         await callback.message.edit_text(
             text=f'✳️ Буквы присутствующие в слове: {", ".join(sorted(chars_included))}'

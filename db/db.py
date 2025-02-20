@@ -108,7 +108,7 @@ async def check_active_session(database: str, message: Message) -> bool:
     '''
     try:
         async with aiosqlite.connect(database) as conn:
-            cursor = await conn.execute(f'SELECT active FROM sessions WHERE tg_id={message.from_user.id}')
+            cursor = await conn.execute(f'SELECT active FROM sessions WHERE tg_id={message.from_user.id} ORDER BY active DESC limit 1')
             res = await cursor.fetchone()
             if res and res[0] == 1:
                 return True
