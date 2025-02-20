@@ -342,7 +342,7 @@ async def get_all_data_attempt(database: str, callback: CallbackQuery):
         res = {}
         suf, cmd = callback.data.split('_')
         session_id = await get_active_session(database, callback)
-        if (suf == 'ip' and cmd == 'agr') or (suf == 'next' and cmd == 'attempt'):
+        if (suf == 'ip' and cmd == 'agr') or (suf == 'next' and cmd == 'attempt') or (suf == 'add' and cmd == 'agr'):
             async with aiosqlite.connect(database) as conn:
                 query = f'SELECT chars_excluded, chars_included, chars_non_in_pos, chars_in_pos FROM attempts WHERE session_id={session_id} AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id={session_id})'
                 cursor = await conn.execute(query)
