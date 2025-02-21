@@ -10,7 +10,7 @@ RUN mkdir -p /app/config && mkdir -p /app/db && mkdir -p /app/filters \
 
 WORKDIR /app
 
-COPY main.py database.db /app
+COPY main.py /app
 COPY config /app/config
 COPY db /app/db
 COPY filters /app/filters
