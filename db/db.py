@@ -15,7 +15,8 @@ __all__ = [
     'insert_filtered_dict', 'get_words_from_filtered_dict',
     'count_filtered_words', 'end_session', 'create_attempt_next',
     'delete_filtered_dict', 'get_current_attempt', 'get_random_word',
-    'get_time_from_last'
+    'get_time_from_last', 'get_message_id_attempt', 'get_len_and_status',
+    'insert_session_word'
     ]
 
 
@@ -187,10 +188,10 @@ async def delete_filtered_dict(database: str, callback: CallbackQuery):
         print(e)
 
 
-async def get_active_session(database: str, callback: CallbackQuery) -> int:
+async def get_active_session(database: str, callback: CallbackQuery, active=1) -> int:
     try:
         async with aiosqlite.connect(database) as conn:
-            cursor = await conn.execute(f'SELECT id FROM sessions WHERE tg_id={callback.from_user.id} AND active=1')
+            cursor = await conn.execute(f'SELECT id FROM sessions WHERE tg_id={callback.from_user.id} AND active={active} ORDER BY id DESC LIMIT 1')
             res = await cursor.fetchone()
             return res[0]
     except aiosqlite.Error as e:
@@ -200,6 +201,17 @@ async def get_active_session(database: str, callback: CallbackQuery) -> int:
 
 async def get_current_attempt(database: str, callback: CallbackQuery):
     query = f'SELECT max(attempt_number) FROM attempts WHERE session_id=(SELECT id FROM sessions WHERE tg_id={callback.from_user.id} AND active=1) '
+    try:
+        async with aiosqlite.connect(database) as conn:
+            cursor = await conn.execute(query)
+            res = await cursor.fetchone()
+            return res[0]
+    except aiosqlite.Error as e:
+        print(e)
+
+
+async def get_message_id_attempt(database: str, message: Message|CallbackQuery):
+    query = f'SELECT message_id FROM attempts WHERE session_id=(SELECT id FROM sessions WHERE tg_id={message.from_user.id} AND active=1)'
     try:
         async with aiosqlite.connect(database) as conn:
             cursor = await conn.execute(query)
@@ -249,10 +261,10 @@ async def get_letters_included(database: str, callback: CallbackQuery):
         print(e)
 
 
-async def get_length_word(database: str, callback: CallbackQuery):
+async def get_length_word(database: str, callback: CallbackQuery, active=1):
     try:
         async with aiosqlite.connect(database) as conn:
-            cursor = await conn.execute(f'SELECT word_len FROM sessions WHERE tg_id={callback.from_user.id} and active=1')
+            cursor = await conn.execute(f'SELECT word_len FROM sessions WHERE tg_id={callback.from_user.id} and active={active}')
             result = await cursor.fetchone()
         return result[0]
     except aiosqlite.Error as e:
@@ -337,12 +349,11 @@ async def reset_positions_to_attempt(database: str, callback: CallbackQuery):
         print(e)
 
 
-async def get_all_data_attempt(database: str, callback: CallbackQuery):
+async def get_all_data_attempt(database: str, callback: CallbackQuery, passive=False):
     try:
         res = {}
-        suf, cmd = callback.data.split('_')
-        session_id = await get_active_session(database, callback)
-        if (suf == 'ip' and cmd == 'agr') or (suf == 'next' and cmd == 'attempt') or (suf == 'add' and cmd == 'agr'):
+        if passive:
+            session_id = await get_active_session(database, callback, active=0)
             async with aiosqlite.connect(database) as conn:
                 query = f'SELECT chars_excluded, chars_included, chars_non_in_pos, chars_in_pos FROM attempts WHERE session_id={session_id} AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id={session_id})'
                 cursor = await conn.execute(query)
@@ -351,6 +362,19 @@ async def get_all_data_attempt(database: str, callback: CallbackQuery):
                 res['in'] = data[1]
                 res['np'] = data[2]
                 res['ip'] = data[3]
+            return res
+        else:
+            session_id = await get_active_session(database, callback)
+            suf, cmd = callback.data.split('_')
+            if (suf == 'ip' and cmd == 'agr') or (suf == 'next' and cmd == 'attempt') or (suf == 'add' and cmd == 'agr'):
+                async with aiosqlite.connect(database) as conn:
+                    query = f'SELECT chars_excluded, chars_included, chars_non_in_pos, chars_in_pos FROM attempts WHERE session_id={session_id} AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id={session_id})'
+                    cursor = await conn.execute(query)
+                    data = await cursor.fetchone()
+                    res['ex'] = data[0]
+                    res['in'] = data[1]
+                    res['np'] = data[2]
+                    res['ip'] = data[3]
         return res
     except aiosqlite.Error as e:
         print(e)
@@ -451,3 +475,28 @@ async def get_time_from_last(database: str, callback: CallbackQuery|Message):
     except aiosqlite.Error as e:
         print(e)
         return False       
+
+
+async def get_len_and_status(database: str, message: Message):
+    query = f'SELECT active, word_len, result FROM sessions WHERE tg_id={message.from_user.id} ORDER BY id DESC LIMIT 1'
+    try:
+        async with aiosqlite.connect(database) as conn:
+            cursor = await conn.execute(query)
+            res = await cursor.fetchone()
+        return res
+    except aiosqlite.Error as e:
+        print(e)
+        return False
+
+
+async def insert_session_word(database: str, message: Message):
+    '''
+    Функция добавляет слово которое было подобрано пользователем
+    '''
+    try:
+        session_id = await get_active_session(database, message, active=0)
+        async with aiosqlite.connect(database) as conn:
+            await conn.execute(f'UPDATE sessions SET result="{message.text}" WHERE id={session_id} AND tg_id={message.from_user.id}')
+            await conn.commit()
+    except Error:
+        print(Error)

@@ -1,7 +1,7 @@
 from aiogram.filters import BaseFilter
 from aiogram import F
 from aiogram.types import CallbackQuery, Message
-
+from db import get_len_and_status
 
 __all__ = ['IsRemButton', 'IsCncRemButton', 'IsRstRemButton', 'IsAgrRemButton',
            'IsAddButton', 'IsCncAddButton', 'IsRstAddButton', 'IsAgrAddButton',
@@ -9,7 +9,8 @@ __all__ = ['IsRemButton', 'IsCncRemButton', 'IsRstRemButton', 'IsAgrRemButton',
            'IsRstNposButton', 'IsAgrNposButton', 'IsPosLetterButton',
            'IsPosNumberButton', 'IsAgrPosButton', 'IsRstPosButton',
            'IsPrevButton', 'IsNextButton', 'IsAttemptEnd', 'IsFindedWord',
-           'IsNextAttempt', 'IsGetLengthRandomWord', 'IsNotPrivateChat'
+           'IsNextAttempt', 'IsGetLengthRandomWord', 'IsNotPrivateChat',
+           'IsWordFromUser'
            ]
 
 
@@ -397,6 +398,22 @@ class IsNextAttempt(BaseFilter):
         try:
             suf, glag = callback.data.split('_')
             if suf == 'next' and glag == 'attempt':
+                return True
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsWordFromUser(BaseFilter):
+    def __init__(self, database):
+        self.database = database
+
+    async def __call__(self, message: Message):
+        status, length_word, result = await get_len_and_status(self.database, message)
+        try:
+            if len(message.text) == length_word and status == 0 and not result:
                 return True
             else:
                 return False

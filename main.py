@@ -40,7 +40,11 @@ async def process_start_command(message: Message):
 async def process_run_guess(message: Message):
     await update_activity_user(_db, message)
     if await check_active_session(_db, message):
-        await message.answer(text='Сессия бодбора слов запущена')
+        msg_id = await get_message_id_attempt(_db, message)
+        await message.answer(reply_to_message_id=msg_id,
+                             text='Сессия бодбора слов запущена\n'
+                                  'нужно завершить поиск!'
+                             )
     else:
         await message.answer(
             text=RU['kb_choice_length'],
@@ -481,12 +485,35 @@ async def press_word_find(callback: CallbackQuery):
         text='Если я вам помог, то напишите какое слово подошло.'
     )
 
+
+@dp.message(F.text, IsWordFromUser(_db))
+async def get_finded_word(message: Message):
+    # Длина слова
+    length = await get_length_word(_db, message, active=0)
+    # Берем все строки из попытки
+    data = await get_all_data_attempt(_db, message, passive=True)
+    # Выбираем все слова из словаря определенной длины
+    dictionary = await get_words_from_dict(_db, length)
+    # Формируем словарь параметров с регулярками
+    params = gen_params(data.get('ex', ''), data.get('in', ''), data.get('np', ''), data.get('ip', ''), length)
+    # Фильтруем словарь, только подходящие слова
+    dictionary = words_filter(dictionary, params)
+    if message.text in dictionary:
+        await insert_session_word(_db, message)
+        await message.answer('Спасибо 🥹')
+    else:
+        await message.answer('Помоему ты врунишка 😅')
+
+
 ### end master find word ###
 
 ### start random offer word ###
 
 @dp.message(Command(commands=['random']))
 async def process_run_random_word(message: Message):
+    '''
+    Запуск клавиатуры для выбора длины рандомного слова
+    '''
     timedelta = await get_time_from_last(_db, message)
     max_limit = 15
     if timedelta < max_limit:
@@ -499,7 +526,10 @@ async def process_run_random_word(message: Message):
 
 
 @dp.callback_query(IsGetLengthRandomWord())
-async def press_word_find(callback: CallbackQuery, length: int):
+async def return_random_word(callback: CallbackQuery, length: int):
+    '''
+    Возвращаем рандомное слово
+    '''
     await update_activity_user(_db, callback)
     word = await get_random_word(_db, callback, length)
     await callback.message.edit_text(text=word)
