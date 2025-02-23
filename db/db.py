@@ -290,10 +290,15 @@ async def get_pos_letters(database, callback: CallbackQuery, with_callback=True,
     try:
         if with_callback:
             suf, numlet = callback.data.split('_')
-        if (suf == 'np' and numlet != 'agr') or (suf == 'add' and numlet == 'agr'):
-            field = 'non_in_pos'
+            if (suf == 'np' and numlet != 'agr') or (suf == 'add' and numlet == 'agr'):
+                field = 'non_in_pos'
+            else:
+                field = 'in_pos'
         else:
-            field = 'in_pos'
+            if suf == 'np':
+                field = 'non_in_pos'
+            else:
+                field = 'in_pos'
         session_id = await get_active_session(database, callback)
         async with aiosqlite.connect(database) as conn:
             cursor = await conn.execute(f'SELECT chars_{field} FROM attempts WHERE session_id={session_id} AND attempt_number=(SELECT max(attempt_number) FROM attempts WHERE session_id={session_id})')

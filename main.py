@@ -248,19 +248,18 @@ async def agree_included_letters(callback: CallbackQuery):
             letters = await get_pos_letters(_db, callback)
             pos_letters = show_pos_letters(letters)
             await callback.message.edit_text(
-                text='📌 Буквы не на своих местах\n'
+                text='✴️ Буквы не на своих местах\n'
                     f'{pos_letters}',
                 reply_markup=gen_kb_letters_in(chars_included, 'np')
             )
         else:
             await callback.message.edit_text(
-                text='🚫 Выберите букву, для которой известно место где этой '
+                text='✴️ Выберите букву, для которой известно место где этой '
                     'буквы нет\n\nчтобы продолжить/пропустить: нажмите Принять',
                 # np = non-position
                 reply_markup=gen_kb_letters_in(chars_included, 'np')
                 )
     else:
-        await update_activity_user(_db, callback.message)
         # Длина слова
         length = await get_length_word(_db, callback)
         # Берем все строки из попытки
@@ -288,7 +287,7 @@ async def press_nonpos_button(callback: CallbackQuery, let):
     length = await get_length_word(_db, callback)
     await update_activity_user(_db, callback.message)
     await callback.message.edit_text(
-        text=f'📌 Выбери позицию где нет буквы {let}',
+        text=f'✴️ Выбери позицию где нет буквы {let}',
         reply_markup=gen_kb_line(length, 'np', let)
     )
 
@@ -297,21 +296,29 @@ async def press_nonpos_button(callback: CallbackQuery, let):
 async def press_nonpos_num_button(callback: CallbackQuery):
     chars_included = await get_letters(_db, callback)
     letters = await get_pos_letters(_db, callback)
+    ip_letters = await get_pos_letters(_db, callback, with_callback=False, suf='ip')
     pos_letters = show_pos_letters(letters)
     await update_activity_user(_db, callback.message)
     if letters and callback.data.split('_')[-1] in letters.split(':'):
         await callback.answer(text='Эта буква уже добавлена в этой позиции')
         await callback.message.edit_text(
-            text='📌 Буквы не на своих местах\n'
+            text='✴️ Буквы не на своих местах\n'
+                f'{pos_letters}',
+            reply_markup=gen_kb_letters_in(chars_included, 'np')
+        )
+    elif ip_letters and callback.data.split('_')[-1] in ip_letters:
+        await callback.answer(text='Эта буква имеет позицию')
+        await callback.message.edit_text(
+            text='✴️ Буквы не на своих местах\n'
                 f'{pos_letters}',
             reply_markup=gen_kb_letters_in(chars_included, 'np')
         )
     else:
-        await insert_positions_to_attempt(_db, callback)    
+        await insert_positions_to_attempt(_db, callback)
         letters = await get_pos_letters(_db, callback)
         pos_letters = show_pos_letters(letters)
         await callback.message.edit_text(
-            text='📌 Буквы не на своих местах\n'
+            text='✴️ Буквы не на своих местах\n'
                 f'{pos_letters}',
             reply_markup=gen_kb_letters_in(chars_included, 'np')
         )
@@ -367,9 +374,9 @@ async def press_pos_num_button(callback: CallbackQuery):
     letters = await get_pos_letters(_db, callback)
     pos_letters = show_pos_letters(letters)
     await update_activity_user(_db, callback.message)
-    # non_letters = await get_pos_letters(_db, callback, with_callback=False, suf='np')
-    non_letters = await get_pos_letters(_db, callback)
-
+    non_letters = await get_pos_letters(_db, callback, with_callback=False, suf='np')
+    # print(letters, non_letters)
+    # проверка на уже добавленную позицию буквы
     if letters and callback.data.split('_')[-1] in letters.split(':'):
         await callback.answer(text='Эта буква уже добавлена в этой позиции')
         await callback.message.edit_text(
@@ -498,7 +505,7 @@ async def get_finded_word(message: Message):
     params = gen_params(data.get('ex', ''), data.get('in', ''), data.get('np', ''), data.get('ip', ''), length)
     # Фильтруем словарь, только подходящие слова
     dictionary = words_filter(dictionary, params)
-    if message.text in dictionary:
+    if message.text.lower() in dictionary:
         await insert_session_word(_db, message)
         await message.answer('Спасибо 🥹')
     else:
@@ -535,6 +542,13 @@ async def return_random_word(callback: CallbackQuery, length: int):
     await callback.message.edit_text(text=word)
 
 
+### end random offer word ###
+
+### start show finded word ###
+
+
+
+### end show finded word ###
 
 
 @dp.callback_query()
