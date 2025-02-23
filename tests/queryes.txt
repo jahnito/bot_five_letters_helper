@@ -23,3 +23,8 @@ INSERT INTO attempts (session_id, attempt_number) VALUES
 
 
 SELECT word FROM dictionary WHERE length(word)=5 limit 0,40
+
+
+
+
+SELECT * FROM sessions WHERE length(result) = 5 AND ended > datetime('now', '-24 hour')

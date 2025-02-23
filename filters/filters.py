@@ -10,7 +10,7 @@ __all__ = ['IsRemButton', 'IsCncRemButton', 'IsRstRemButton', 'IsAgrRemButton',
            'IsPosNumberButton', 'IsAgrPosButton', 'IsRstPosButton',
            'IsPrevButton', 'IsNextButton', 'IsAttemptEnd', 'IsFindedWord',
            'IsNextAttempt', 'IsGetLengthRandomWord', 'IsNotPrivateChat',
-           'IsWordFromUser'
+           'IsWordFromUser', 'IsGetLengthFoundWord'
            ]
 
 
@@ -422,8 +422,6 @@ class IsWordFromUser(BaseFilter):
             return False
 
 
-# start random word #
-
 class IsGetLengthRandomWord(BaseFilter):
     def __init__(self):
         pass
@@ -432,6 +430,25 @@ class IsGetLengthRandomWord(BaseFilter):
         try:
             suf, num = callback.data.split('_')
             if suf == 'lengthR' and num.isdigit():
+                return {'length': int(num)}
+            else:
+                return False
+        except (ValueError, IndexError) as e:
+            print(e)
+            return False
+
+
+class IsGetLengthFoundWord(BaseFilter):
+    '''
+    Фильтр отлавливает запрос на вывод найденных слов по длине
+    '''
+    def __init__(self):
+        pass
+
+    async def __call__(self, callback: CallbackQuery):
+        try:
+            suf, num = callback.data.split('_')
+            if suf == 'lengthF' and num.isdigit():
                 return {'length': int(num)}
             else:
                 return False

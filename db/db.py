@@ -16,7 +16,7 @@ __all__ = [
     'count_filtered_words', 'end_session', 'create_attempt_next',
     'delete_filtered_dict', 'get_current_attempt', 'get_random_word',
     'get_time_from_last', 'get_message_id_attempt', 'get_len_and_status',
-    'insert_session_word'
+    'insert_session_word', 'get_founded_words'
     ]
 
 
@@ -501,7 +501,19 @@ async def insert_session_word(database: str, message: Message):
     try:
         session_id = await get_active_session(database, message, active=0)
         async with aiosqlite.connect(database) as conn:
-            await conn.execute(f'UPDATE sessions SET result="{message.text}" WHERE id={session_id} AND tg_id={message.from_user.id}')
+            await conn.execute(f'UPDATE sessions SET result="{message.text.lower()}" WHERE id={session_id} AND tg_id={message.from_user.id}')
             await conn.commit()
     except Error:
         print(Error)
+
+
+
+async def get_founded_words(database: str, message: Message, length: int):
+    try:
+        query = f'SELECT result FROM sessions WHERE length(result) = {length} AND ended > datetime("now", "-24 hour")'
+        async with aiosqlite.connect(database) as conn:
+            cursor = await conn.execute(query)
+            result = await cursor.fetchall()
+        return result
+    except aiosqlite.Error as e:
+        print(e)

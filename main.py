@@ -524,7 +524,7 @@ async def process_run_random_word(message: Message):
     timedelta = await get_time_from_last(_db, message)
     max_limit = 15
     if timedelta < max_limit:
-        await message.answer(text=f'Нельзя чаще чем раз в {max_limit} секунд, до следующей попытки осталось {max_limit - int(timedelta)} секунд')
+        await message.answer(text=f'Нельзя чаще чем раз в {max_limit} секунд, до следующей попытки осталось {max_limit - int(timedelta)} секунд 🕑')
     else:
         await message.answer(
             text=RU['kb_choice_length'],
@@ -546,6 +546,50 @@ async def return_random_word(callback: CallbackQuery, length: int):
 
 ### start show finded word ###
 
+@dp.message(Command(commands=['found']))
+async def show_found_words(message: Message):
+    timedelta = await get_time_from_last(_db, message)
+    max_limit = 120
+    if timedelta < max_limit:
+        await message.answer(text=f'Нельзя чаще чем раз в {max_limit} секунд,'
+                                   'следующий запрос будет доступен через ' 
+                                  f'{max_limit - int(timedelta)} секунд 🕑')
+    else:
+        await message.answer(
+            text='Какой длины показать найденные недавно слова?',
+            reply_markup=gen_kb_set_lenght(suf='F'),
+            )
+
+
+@dp.callback_query(IsGetLengthFoundWord())
+async def return_founded_words(callback: CallbackQuery, length: int):
+    await update_activity_user(_db, callback)
+    words = await get_founded_words(_db, callback, length)
+    if words:
+        res = {}
+        words = [i[0] for i in words]
+        for i in words:
+            if i not in res:
+                res[words.count(i)] = i
+
+        text = ''
+        c = 0
+        raz = [0, 1, 5, 6, 7, 8, 9]
+        for key in sorted(res.keys(), reverse=True):
+            if key % 10 in raz:
+                r = 'раз'
+            else:
+                r = 'раза'
+            c += 1
+            text += f'{key} {r} "{res[key]}"\n\n'
+            if c == 20:
+                break
+        await callback.message.edit_text(
+            text=f'Слова длиной {length} букв подобранные за последние 24 часа 🕑\n\n'
+                 + text,
+            )
+    else:
+        await callback.message.edit_text(text=f'Пока не было результатов подбора для слов длиной {length} букв')
 
 
 ### end show finded word ###
