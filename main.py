@@ -549,11 +549,11 @@ async def return_random_word(callback: CallbackQuery, length: int):
 @dp.message(Command(commands=['found']))
 async def show_found_words(message: Message):
     timedelta = await get_time_from_last(_db, message)
-    max_limit = 120
+    max_limit = 30
     if timedelta < max_limit:
-        await message.answer(text=f'Нельзя чаще чем раз в {max_limit} секунд,'
-                                   'следующий запрос будет доступен через ' 
-                                  f'{max_limit - int(timedelta)} секунд 🕑')
+        await message.answer(text=f'Нельзя запрашивать чаще чем раз в {max_limit} '
+                                   'секунд, следующий запрос будет доступен через ' 
+                                  f'{max_limit - int(timedelta)} сек. 🕑')
     else:
         await message.answer(
             text='Какой длины показать найденные недавно слова?',

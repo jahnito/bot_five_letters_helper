@@ -413,7 +413,7 @@ class IsWordFromUser(BaseFilter):
     async def __call__(self, message: Message):
         status, length_word, result = await get_len_and_status(self.database, message)
         try:
-            if len(message.text) == length_word and status == 0 and not result:
+            if len(message.text) == length_word and status == 0 and message.text.isalpha() and not result:
                 return True
             else:
                 return False
