@@ -121,7 +121,9 @@ async def cancel_last_rem_letter(callback: CallbackQuery):
     '''
     Удаляем последнюю исключаемую букву
     '''
-    chars_excluded = await get_letters(_db, callback)
+    chars_excluded = await get_letters_excluded(_db, callback)
+    # print(chars_excluded)
+    # print(callback.data)
     await update_activity_user(_db, callback.message)
     if chars_excluded:
         await callback.answer(f'Возвращена буква *{chars_excluded[-1]}*')
@@ -132,7 +134,7 @@ async def cancel_last_rem_letter(callback: CallbackQuery):
             RU['kb_exc_footer'],
             reply_markup=callback.message.reply_markup)
     else:
-        await callback.answer(f'Список букв пуст')
+        await callback.answer('Список букв пуст')
 
 
 @dp.callback_query(IsRstRemButton())
@@ -141,7 +143,9 @@ async def reset_last_rem_letter(callback: CallbackQuery):
     Очищаем список букв
     '''
     await update_activity_user(_db, callback.message)
-    chars_excluded = await get_letters(_db, callback)
+    chars_excluded = await get_letters_excluded(_db, callback)
+    print(chars_excluded)
+    print(callback.data)
     if chars_excluded:
         await callback.answer(f'Список букв очищен!')
         await insert_chars_to_attempt(_db, callback, '')
