@@ -574,18 +574,18 @@ async def return_founded_words(callback: CallbackQuery, length: int):
         words = [i[0] for i in words]
         for i in words:
             if i not in res:
-                res[words.count(i)] = i
+                res[i] = words.count(i)
 
         text = ''
         c = 0
         raz = [0, 1, 5, 6, 7, 8, 9]
-        for key in sorted(res.keys(), reverse=True):
-            if key % 10 in raz:
+        for key, value in sorted(res.items(), key=lambda x: x[1], reverse=True):
+            if value % 10 in raz:
                 r = 'раз'
             else:
                 r = 'раза'
             c += 1
-            text += f'{key} {r} "{res[key]}"\n\n'
+            text += f'{value} {r} "{key}"\n\n'
             if c == 20:
                 break
         await callback.message.edit_text(
