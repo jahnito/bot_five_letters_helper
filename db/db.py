@@ -264,7 +264,7 @@ async def get_letters_included(database: str, callback: CallbackQuery):
 async def get_length_word(database: str, callback: CallbackQuery, active=1):
     try:
         async with aiosqlite.connect(database) as conn:
-            cursor = await conn.execute(f'SELECT word_len FROM sessions WHERE tg_id={callback.from_user.id} and active={active}')
+            cursor = await conn.execute(f'SELECT word_len FROM sessions WHERE tg_id={callback.from_user.id} and active={active} ORDER BY id DESC LIMIT 1')
             result = await cursor.fetchone()
         return result[0]
     except aiosqlite.Error as e:
